@@ -1,0 +1,44 @@
+{
+  "name": "git-commit-button",
+  "displayName": "Git Commit Button",
+  "description": "Add custom button above git commit message box",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:workbench.scm"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitCommitButton.customAction",
+        "title": "Custom Action",
+        "icon": "$(add)"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "gitCommitButton.customAction",
+          "when": "scmProvider == git",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  }
+}
