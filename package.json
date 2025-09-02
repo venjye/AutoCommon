@@ -1,8 +1,9 @@
 {
   "name": "git-commit-button",
-  "displayName": "Git Commit AI",
-  "description": "AI-Powered Git Commit Messages",
-  "version": "0.1.2",
+  "displayName": "AI Commit",
+  "icon": "icon.png",
+  "description": "AI-Powered Git Commit Messages automatically generates clear, consistent commit messages using an OpenAI-style API that you can fully customize.",
+  "version": "0.1.4",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -17,17 +18,17 @@
     "commands": [
       {
         "command": "gitCommitButton.generateCommitMessage",
-        "title": "AI生成提交信息",
+        "title": "Generate Commit Message",
         "icon": "$(sparkle)"
       },
       {
         "command": "gitCommitButton.showLogs",
-        "title": "显示日志",
+        "title": "Show Logs",
         "icon": "$(output)"
       },
       {
         "command": "gitCommitButton.fetchModels",
-        "title": "获取模型列表",
+        "title": "Fetch Models",
         "icon": "$(list-selection)"
       }
     ],
@@ -52,7 +53,7 @@
       ]
     },
     "configuration": {
-      "title": "Git Commit AI",
+      "title": "AI Commit",
       "properties": {
         "gitCommitAI.apiUrl": {
           "type": "string",
@@ -67,13 +68,19 @@
         "gitCommitAI.model": {
           "type": "string",
           "default": "gpt-3.5-turbo",
-          "description": "AI Model name (使用命令面板中的'获取模型列表'来自动获取可用模型)"
+          "description": "AI Model name (use 'Get Model List' from the command palette to automatically fetch available models)"
         },
         "gitCommitAI.logLevel": {
           "type": "string",
           "enum": ["DEBUG", "INFO", "WARN", "ERROR"],
           "default": "INFO",
-          "description": "日志级别 (DEBUG显示所有日志，INFO显示一般信息，WARN显示警告，ERROR只显示错误)"
+          "description": "Log Level (DEBUG shows all logs, INFO shows general information, WARN shows warnings, ERROR shows only errors)"
+        },
+        "gitCommitAI.commitLanguage": {
+          "type": "string",
+          "enum": ["English", "Chinese", "Japanese", "Korean", "French", "German", "Spanish", "Portuguese", "Russian", "Italian"],
+          "default": "English",
+          "description": "Language for AI-generated commit messages"
         }
       }
     }
@@ -81,7 +88,8 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "package": "npx vsce package"
   },
   "devDependencies": {
     "@types/node": "16.x",

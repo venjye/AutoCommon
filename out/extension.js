@@ -5,7 +5,7 @@ const vscode = require("vscode");
 const cp = require("child_process");
 const util_1 = require("util");
 const exec = (0, util_1.promisify)(cp.exec);
-// 日志级别枚举
+// Log level enumeration
 var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["DEBUG"] = 0] = "DEBUG";
@@ -13,7 +13,7 @@ var LogLevel;
     LogLevel[LogLevel["WARN"] = 2] = "WARN";
     LogLevel[LogLevel["ERROR"] = 3] = "ERROR";
 })(LogLevel || (LogLevel = {}));
-// 日志管理器类
+// Logger manager class
 class Logger {
     constructor(name) {
         this.outputChannel = vscode.window.createOutputChannel(name);
@@ -35,9 +35,9 @@ class Logger {
         const formattedMessage = this.formatMessage(levelName, message);
         this.outputChannel.appendLine(formattedMessage);
         if (args.length > 0) {
-            this.outputChannel.appendLine(`详细信息: ${JSON.stringify(args, null, 2)}`);
+            this.outputChannel.appendLine(`Details: ${JSON.stringify(args, null, 2)}`);
         }
-        // 在开发模式下也输出到控制台
+        // Also output to console in development mode
         if (level >= LogLevel.ERROR) {
             console.error(formattedMessage, ...args);
         }
@@ -67,140 +67,238 @@ class Logger {
         this.outputChannel.dispose();
     }
 }
-// 全局日志实例
+// Global logger instance
 let logger;
 function activate(context) {
-    // 初始化日志器
+    // Initialize logger
     logger = new Logger('Git Commit AI');
     logger.info('Git Commit AI extension is now active!');
-    // 注册显示日志命令
+    // Register show logs command
     const showLogsDisposable = vscode.commands.registerCommand('gitCommitButton.showLogs', () => {
         logger.show();
     });
-    // 注册获取模型列表命令
+    // Register fetch models command
     const fetchModelsDisposable = vscode.commands.registerCommand('gitCommitButton.fetchModels', async () => {
         try {
-            logger.info('开始获取模型列表');
+            logger.info('Starting to fetch model list');
             await fetchAndUpdateModels();
-            logger.info('模型列表获取完成');
+            logger.info('Model list fetch completed');
         }
         catch (error) {
-            logger.error('获取模型列表时出错', error);
-            vscode.window.showErrorMessage(`获取模型列表时出错: ${error}`);
+            logger.error('Error occurred while fetching model list', error);
+            vscode.window.showErrorMessage(`Error fetching model list: ${error}`);
         }
     });
-    // 注册生成提交信息命令
+    // Register generate commit message command
     const generateDisposable = vscode.commands.registerCommand('gitCommitButton.generateCommitMessage', async () => {
         try {
-            logger.info('开始生成提交信息');
+            logger.info('Starting to generate commit message');
             await generateCommitMessage();
-            logger.info('提交信息生成完成');
+            logger.info('Commit message generation completed');
         }
         catch (error) {
-            logger.error('生成提交信息时出错', error);
-            vscode.window.showErrorMessage(`生成提交信息时出错: ${error}`);
+            logger.error('Error occurred while generating commit message', error);
+            vscode.window.showErrorMessage(`Error generating commit message: ${error}`);
         }
     });
     context.subscriptions.push(generateDisposable, showLogsDisposable, fetchModelsDisposable, logger);
 }
 exports.activate = activate;
 async function generateCommitMessage() {
-    logger.debug('开始生成提交信息流程');
-    // 获取当前工作区
+    logger.debug('Starting commit message generation process');
+    // Get current workspace
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) {
-        logger.warn('没有打开的工作区');
-        vscode.window.showErrorMessage('没有打开的工作区');
+        logger.warn('No workspace is open');
+        vscode.window.showErrorMessage('No workspace is open');
         return;
     }
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
-    logger.debug('工作区路径', { workspaceRoot });
-    // 显示进度
+    logger.debug('Workspace path', { workspaceRoot });
+    // Show progress
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: "正在生成提交信息...",
+        title: "Generating commit message...",
         cancellable: false
     }, async (progress) => {
         try {
-            // 1. 获取Git变更
-            logger.info('步骤1: 获取Git变更');
-            progress.report({ increment: 25, message: "获取Git变更..." });
+            // 1. Get Git changes
+            logger.info('Step 1: Getting Git changes');
+            progress.report({ increment: 25, message: "Getting Git changes..." });
             const gitDiff = await getGitDiff(workspaceRoot);
             if (!gitDiff.trim()) {
-                logger.warn('没有检测到Git变更');
-                vscode.window.showWarningMessage('没有检测到Git变更');
+                logger.warn('No Git changes detected');
+                vscode.window.showWarningMessage('No Git changes detected');
                 return;
             }
-            logger.debug('Git变更内容长度', { length: gitDiff.length });
-            // 2. 调用AI生成提交信息
-            logger.info('步骤2: 调用AI生成提交信息');
-            progress.report({ increment: 50, message: "AI生成提交信息..." });
+            logger.debug('Git changes content length', { length: gitDiff.length });
+            // 2. Call AI to generate commit message
+            logger.info('Step 2: Calling AI to generate commit message');
+            progress.report({ increment: 50, message: "AI generating commit message..." });
             const commitMessage = await callAI(gitDiff);
-            logger.info('AI生成的提交信息', { commitMessage });
-            // 3. 设置到Git提交框
-            logger.info('步骤3: 设置提交信息到Git输入框');
-            progress.report({ increment: 75, message: "设置提交信息..." });
+            logger.info('AI generated commit message', { commitMessage });
+            // 3. Set to Git commit box
+            logger.info('Step 3: Setting commit message to Git input box');
+            progress.report({ increment: 75, message: "Setting commit message..." });
             await setCommitMessage(commitMessage);
-            progress.report({ increment: 100, message: "完成!" });
-            logger.info('提交信息生成流程完成');
-            vscode.window.showInformationMessage('提交信息已生成');
+            progress.report({ increment: 100, message: "Complete!" });
+            logger.info('Commit message generation process completed');
+            vscode.window.showInformationMessage('Commit message has been generated');
         }
         catch (error) {
-            logger.error('生成提交信息流程中发生错误', error);
+            logger.error('Error occurred during commit message generation process', error);
             throw error;
         }
     });
 }
 async function getGitDiff(workspaceRoot) {
     try {
-        logger.debug('开始获取Git变更', { workspaceRoot });
-        // 获取暂存区的变更
-        logger.debug('检查暂存区变更');
+        logger.debug('Starting to get Git changes', { workspaceRoot });
+        // Get staged changes
+        logger.debug('Checking staged changes');
         const { stdout: stagedDiff } = await exec('git diff --cached', { cwd: workspaceRoot });
-        // 如果暂存区没有变更，获取工作区变更
+        // If no staged changes, get working directory changes
         if (!stagedDiff.trim()) {
-            logger.debug('暂存区无变更，检查工作区变更');
+            logger.debug('No staged changes, checking working directory changes');
             const { stdout: workingDiff } = await exec('git diff', { cwd: workspaceRoot });
-            logger.debug('工作区变更获取完成', { hasChanges: !!workingDiff.trim() });
+            logger.debug('Working directory changes retrieval completed', { hasChanges: !!workingDiff.trim() });
             return workingDiff;
         }
-        logger.debug('暂存区变更获取完成', { hasChanges: !!stagedDiff.trim() });
+        logger.debug('Staged changes retrieval completed', { hasChanges: !!stagedDiff.trim() });
         return stagedDiff;
     }
     catch (error) {
-        logger.error('获取Git变更时发生错误', error);
-        throw new Error('无法获取Git变更信息');
+        logger.error('Error occurred while getting Git changes', error);
+        throw new Error('Unable to get Git change information');
     }
 }
-async function callAI(gitDiff) {
-    logger.debug('开始调用AI API');
-    const config = vscode.workspace.getConfiguration('gitCommitAI');
-    const apiUrl = config.get('apiUrl');
-    const apiKey = config.get('apiKey');
-    const model = config.get('model');
-    logger.debug('AI配置信息', {
-        apiUrl,
-        model,
-        hasApiKey: !!apiKey,
-        gitDiffLength: gitDiff.length
-    });
-    if (!apiKey) {
-        logger.error('AI API Key未配置');
-        throw new Error('请先在设置中配置AI API Key');
-    }
-    const prompt = `请根据以下Git变更内容，生成一个简洁明了的提交信息。提交信息应该：
-1. 使用中文，使用标准规范的Git提交格式
-2. 提交信息应该简洁明了
-3. 描述主要变更内容
-4. 有多个点进行修改时，要使用123这样的格式.
+function generatePromptForLanguage(language, gitDiff) {
+    const prompts = {
+        'English': `Please generate a concise and clear commit message based on the following Git changes. The commit message should:
+1. Use standard Git commit format.
+2. Be concise and clear.
+3. Describe the main changes.
+4. Use numbered format (1, 2, 3) when there are multiple modification points.
+
+Git changes:
+${gitDiff}
+
+Please return only the commit message, without any other content:`,
+        'Chinese': `请根据以下Git变更内容，生成一个简洁明了的提交信息。提交信息应该：
+1. 使用中文标准规范的Git提交格式。
+2. 提交信息应该简洁明了。
+3. 描述主要变更内容。
+4. 有多个点进行修改时，要使用1、2、3这样的格式。
 
 Git变更内容：
 ${gitDiff}
 
-请只返回提交信息，不要包含其他内容：`;
+请只返回提交信息，不要包含其他内容：`,
+        'Japanese': `以下のGit変更内容に基づいて、簡潔で明確なコミットメッセージを生成してください。コミットメッセージは以下の条件を満たす必要があります：
+1. 標準的なGitコミット形式を使用する。
+2. 簡潔で明確である。
+3. 主な変更内容を説明する。
+4. 複数の修正点がある場合は、1、2、3の形式を使用する。
+
+Git変更内容：
+${gitDiff}
+
+コミットメッセージのみを返してください。他の内容は含めないでください：`,
+        'Korean': `다음 Git 변경 내용을 바탕으로 간결하고 명확한 커밋 메시지를 생성해주세요. 커밋 메시지는 다음 조건을 만족해야 합니다:
+1. 표준 Git 커밋 형식을 사용한다.
+2. 간결하고 명확하다.
+3. 주요 변경 사항을 설명한다.
+4. 여러 수정 사항이 있을 때는 1, 2, 3 형식을 사용한다.
+
+Git 변경 내용:
+${gitDiff}
+
+커밋 메시지만 반환해주세요. 다른 내용은 포함하지 마세요:`,
+        'French': `Veuillez générer un message de commit concis et clair basé sur les changements Git suivants. Le message de commit doit :
+1. Utiliser le format de commit Git standard.
+2. Être concis et clair.
+3. Décrire les principales modifications.
+4. Utiliser le format numéroté (1, 2, 3) lorsqu'il y a plusieurs points de modification.
+
+Changements Git :
+${gitDiff}
+
+Veuillez retourner uniquement le message de commit, sans autre contenu :`,
+        'German': `Bitte generieren Sie eine prägnante und klare Commit-Nachricht basierend auf den folgenden Git-Änderungen. Die Commit-Nachricht sollte:
+1. Das Standard-Git-Commit-Format verwenden.
+2. Prägnant und klar sein.
+3. Die wichtigsten Änderungen beschreiben.
+4. Das nummerierte Format (1, 2, 3) verwenden, wenn es mehrere Änderungspunkte gibt.
+
+Git-Änderungen:
+${gitDiff}
+
+Bitte geben Sie nur die Commit-Nachricht zurück, ohne anderen Inhalt:`,
+        'Spanish': `Por favor, genere un mensaje de commit conciso y claro basado en los siguientes cambios de Git. El mensaje de commit debe:
+1. Usar el formato estándar de commit de Git.
+2. Ser conciso y claro.
+3. Describir los cambios principales.
+4. Usar formato numerado (1, 2, 3) cuando hay múltiples puntos de modificación.
+
+Cambios de Git:
+${gitDiff}
+
+Por favor, devuelva solo el mensaje de commit, sin otro contenido:`,
+        'Portuguese': `Por favor, gere uma mensagem de commit concisa e clara baseada nas seguintes mudanças do Git. A mensagem de commit deve:
+1. Usar o formato padrão de commit do Git.
+2. Ser concisa e clara.
+3. Descrever as principais mudanças.
+4. Usar formato numerado (1, 2, 3) quando houver múltiplos pontos de modificação.
+
+Mudanças do Git:
+${gitDiff}
+
+Por favor, retorne apenas a mensagem de commit, sem outro conteúdo:`,
+        'Russian': `Пожалуйста, создайте краткое и понятное сообщение коммита на основе следующих изменений Git. Сообщение коммита должно:
+1. Использовать стандартный формат коммита Git.
+2. Быть кратким и понятным.
+3. Описывать основные изменения.
+4. Использовать нумерованный формат (1, 2, 3) при наличии нескольких точек изменения.
+
+Изменения Git:
+${gitDiff}
+
+Пожалуйста, верните только сообщение коммита, без другого содержимого:`,
+        'Italian': `Si prega di generare un messaggio di commit conciso e chiaro basato sui seguenti cambiamenti Git. Il messaggio di commit dovrebbe:
+1. Utilizzare il formato di commit Git standard.
+2. Essere conciso e chiaro.
+3. Descrivere i cambiamenti principali.
+4. Utilizzare il formato numerato (1, 2, 3) quando ci sono più punti di modifica.
+
+Cambiamenti Git:
+${gitDiff}
+
+Si prega di restituire solo il messaggio di commit, senza altri contenuti:`
+    };
+    return prompts[language] || prompts['English'];
+}
+async function callAI(gitDiff) {
+    logger.debug('Starting to call AI API');
+    const config = vscode.workspace.getConfiguration('gitCommitAI');
+    const apiUrl = config.get('apiUrl');
+    const apiKey = config.get('apiKey');
+    const model = config.get('model');
+    const commitLanguage = config.get('commitLanguage', 'English');
+    logger.debug('AI configuration information', {
+        apiUrl,
+        model,
+        commitLanguage,
+        hasApiKey: !!apiKey,
+        gitDiffLength: gitDiff.length
+    });
+    if (!apiKey) {
+        logger.error('AI API Key not configured');
+        throw new Error('Please configure AI API Key in settings first');
+    }
+    const prompt = generatePromptForLanguage(commitLanguage, gitDiff);
     try {
-        logger.info('发送AI API请求', { apiUrl, model });
-        // 使用Node.js内置的fetch (需要Node.js 18+)
+        logger.info('Sending AI API request', { apiUrl, model });
+        // Use Node.js built-in fetch (requires Node.js 18+)
         const response = await globalThis.fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -219,78 +317,78 @@ ${gitDiff}
                 temperature: 0.7
             })
         });
-        logger.debug('AI API响应状态', {
+        logger.debug('AI API response status', {
             status: response.status,
             statusText: response.statusText,
             ok: response.ok
         });
         if (!response.ok) {
             const errorText = await response.text();
-            logger.error('AI API请求失败', {
+            logger.error('AI API request failed', {
                 status: response.status,
                 statusText: response.statusText,
                 errorText
             });
-            throw new Error(`AI API请求失败: ${response.status} ${response.statusText}`);
+            throw new Error(`AI API request failed: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
-        logger.debug('AI API响应数据', { data });
+        logger.debug('AI API response data', { data });
         const commitMessage = data.choices?.[0]?.message?.content?.trim();
         if (!commitMessage) {
-            logger.error('AI返回的响应格式不正确', { data });
-            throw new Error('AI返回的响应格式不正确');
+            logger.error('AI returned response format is incorrect', { data });
+            throw new Error('AI returned response format is incorrect');
         }
-        logger.info('AI生成提交信息成功', { commitMessage });
+        logger.info('AI generated commit message successfully', { commitMessage });
         return commitMessage;
     }
     catch (error) {
-        logger.error('调用AI时发生错误', error);
-        throw new Error(`AI调用失败: ${error}`);
+        logger.error('Error occurred while calling AI', error);
+        throw new Error(`AI call failed: ${error}`);
     }
 }
 async function setCommitMessage(message) {
     try {
-        logger.debug('开始设置提交信息到Git输入框', { message });
-        // 获取Git扩展
+        logger.debug('Starting to set commit message to Git input box', { message });
+        // Get Git extension
         const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
         if (!gitExtension) {
-            logger.error('Git扩展未找到');
-            throw new Error('Git扩展未找到');
+            logger.error('Git extension not found');
+            throw new Error('Git extension not found');
         }
-        logger.debug('Git扩展获取成功');
+        logger.debug('Git extension retrieved successfully');
         const git = gitExtension.getAPI(1);
         const repository = git.repositories[0];
         if (!repository) {
-            logger.error('没有找到Git仓库');
-            throw new Error('没有找到Git仓库');
+            logger.error('No Git repository found');
+            throw new Error('No Git repository found');
         }
-        logger.debug('Git仓库获取成功', { repositoryCount: git.repositories.length });
-        // 设置提交信息
+        logger.debug('Git repository retrieved successfully', { repositoryCount: git.repositories.length });
+        // Set commit message
         repository.inputBox.value = message;
-        logger.info('提交信息设置成功', { message });
+        logger.info('Commit message set successfully', { message });
     }
     catch (error) {
-        logger.error('设置提交信息时发生错误', error);
-        throw new Error('无法设置提交信息到Git输入框');
+        logger.error('Error occurred while setting commit message', error);
+        throw new Error('Unable to set commit message to Git input box');
     }
 }
 async function fetchAndUpdateModels() {
-    logger.debug('开始获取模型列表');
+    logger.debug('Starting to fetch model list');
     const config = vscode.workspace.getConfiguration('gitCommitAI');
     const apiUrl = config.get('apiUrl');
     const apiKey = config.get('apiKey');
     if (!apiKey) {
-        logger.error('API Key未配置，无法获取模型列表');
-        throw new Error('请先在设置中配置AI API Key');
+        logger.error('API Key not configured, unable to fetch model list');
+        throw new Error('Please configure AI API Key in settings first');
     }
     if (!apiUrl) {
-        logger.error('API URL未配置，无法获取模型列表');
-        throw new Error('请先在设置中配置AI API URL');
+        logger.error('API URL not configured, unable to fetch model list');
+        throw new Error('Please configure AI API URL in settings first');
     }
     try {
-        // 构建模型列表API URL
+        // Build model list API URL
         const modelsUrl = apiUrl.replace('/chat/completions', '/models').replace('/v1/chat/completions', '/v1/models');
-        logger.debug('请求模型列表API', { modelsUrl });
+        logger.debug('Requesting model list API', { modelsUrl });
         const response = await globalThis.fetch(modelsUrl, {
             method: 'GET',
             headers: {
@@ -298,48 +396,48 @@ async function fetchAndUpdateModels() {
                 'Content-Type': 'application/json'
             }
         });
-        logger.debug('模型列表API响应状态', {
+        logger.debug('Model list API response status', {
             status: response.status,
             statusText: response.statusText,
             ok: response.ok
         });
         if (!response.ok) {
             const errorText = await response.text();
-            logger.error('获取模型列表API请求失败', {
+            logger.error('Model list API request failed', {
                 status: response.status,
                 statusText: response.statusText,
                 errorText
             });
-            throw new Error(`获取模型列表失败: ${response.status} ${response.statusText}`);
+            throw new Error(`Failed to fetch model list: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
-        logger.debug('模型列表API响应数据', { data });
-        // 解析模型列表
+        logger.debug('Model list API response data', { data });
+        // Parse model list
         const models = data.data || data.models || [];
         if (!Array.isArray(models) || models.length === 0) {
-            logger.warn('API返回的模型列表为空或格式不正确', { data });
-            throw new Error('API返回的模型列表为空或格式不正确');
+            logger.warn('API returned empty model list or incorrect format', { data });
+            throw new Error('API returned empty model list or incorrect format');
         }
-        // 提取模型名称
+        // Extract model names
         const modelNames = models.map((model) => model.id || model.name || model).filter(Boolean);
-        logger.info('获取到的模型列表', { modelNames, count: modelNames.length });
-        // 显示模型选择对话框
+        logger.info('Retrieved model list', { modelNames, count: modelNames.length });
+        // Show model selection dialog
         const selectedModel = await vscode.window.showQuickPick(modelNames, {
-            placeHolder: '选择一个AI模型',
-            title: '可用的AI模型列表'
+            placeHolder: 'Select an AI model',
+            title: 'Available AI Model List'
         });
         if (selectedModel) {
-            // 更新配置
+            // Update configuration
             await config.update('model', selectedModel, vscode.ConfigurationTarget.Global);
-            logger.info('模型已更新', { selectedModel });
-            vscode.window.showInformationMessage(`模型已更新为: ${selectedModel}`);
+            logger.info('Model updated', { selectedModel });
+            vscode.window.showInformationMessage(`Model updated to: ${selectedModel}`);
         }
         else {
-            logger.info('用户取消了模型选择');
+            logger.info('User cancelled model selection');
         }
     }
     catch (error) {
-        logger.error('获取模型列表时发生错误', error);
+        logger.error('Error occurred while fetching model list', error);
         throw error;
     }
 }

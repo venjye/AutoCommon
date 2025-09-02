@@ -1,33 +1,80 @@
-# Git Commit Button Extension
+# Auto Commit Message
 
-这是一个VSCode扩展，在Git提交界面的标题栏中添加一个自定义按钮。
+A VSCode extension that uses AI to automatically generate Git commit messages in Chinese, following standard Git commit conventions.
 
-## 功能
+## Features
 
-- 在Git源代码管理视图的标题栏中添加一个自定义按钮
-- 点击按钮可以执行自定义操作
-- 可以访问Git仓库信息和状态
+- **AI-Powered Generation**: Automatically generates commit messages based on your Git changes
+- **Chinese Language Support**: Generates commit messages in Chinese with proper Git conventions
+- **Multiple AI Models**: Support for OpenAI and compatible APIs with automatic model discovery
+- **Smart Change Detection**: Analyzes both staged and working directory changes
+- **One-Click Integration**: Seamlessly integrates with VSCode's Git interface
+- **Comprehensive Logging**: Built-in logging system for debugging and monitoring
 
-## 开发
+## Installation
 
-1. 安装依赖：
-   ```bash
-   npm install
-   ```
+1. Download the latest `.vsix` file from releases
+2. Install in VSCode: `Extensions` → `...` → `Install from VSIX...`
+3. Or use command line: `code --install-extension auto-commit-message-x.x.x.vsix`
 
-2. 编译TypeScript：
-   ```bash
-   npm run compile
-   ```
+## Usage
 
-3. 在VSCode中按F5启动调试，这会打开一个新的VSCode窗口来测试扩展
+### Basic Usage
+1. Open a Git repository in VSCode
+2. Make changes to your files
+3. In the Source Control panel, click the ✨ (sparkle) button
+4. The AI will analyze your changes and generate a commit message
+5. The generated message will be automatically inserted into the commit input box
 
-## 使用
+### Getting Models
+1. Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+2. Search for "Get Models List"
+3. Select from available AI models for your API
 
-1. 打开一个包含Git仓库的项目
-2. 在源代码管理视图中，你会看到标题栏有一个新的按钮
-3. 点击按钮执行自定义操作
+## Configuration
 
-## 自定义
+Configure the extension in VSCode Settings (`Ctrl+,` / `Cmd+,`):
 
-你可以在 `src/extension.ts` 中的 `handleCustomAction` 函数中添加你想要的功能。
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `gitCommitAI.apiUrl` | AI API endpoint URL | `https://api.openai.com/v1/chat/completions` |
+| `gitCommitAI.apiKey` | Your AI service API key | (empty) |
+| `gitCommitAI.model` | AI model name | `gpt-3.5-turbo` |
+| `gitCommitAI.logLevel` | Logging level | `INFO` |
+
+## Available Commands
+
+Access these commands via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
+
+- **AI Generate Commit Message**: Generate AI-powered commit message
+- **Show Logs**: Display extension logs for debugging
+- **Get Models List**: Retrieve and select from available AI models
+
+## Supported APIs
+
+This extension works with OpenAI-compatible APIs, including:
+- OpenAI GPT models
+- Azure OpenAI Service
+- Local AI services (Ollama, etc.)
+- Other OpenAI-compatible endpoints
+
+## Requirements
+
+- VSCode 1.74.0 or higher
+- Git repository
+- AI API access (OpenAI or compatible)
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| API Key not configured | Set your API key in VSCode settings |
+| Model not available | Use "Get Models List" command |
+| No Git changes detected | Make sure you have uncommitted changes |
+| Extension not working | Check logs using "Show Logs" command |
+
+For detailed debugging, set log level to `DEBUG` in settings.
+
+## License
+
+MIT License
